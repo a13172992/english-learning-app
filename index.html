@@ -292,6 +292,53 @@
             font-size: 12px;
             color: #999;
         }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #c9b8e8 0%, #d8c8f0 100%);
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .btn-purple:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(201, 184, 232, 0.5);
+        }
+
+        .video-container {
+            margin: 16px 0;
+            display: none;
+        }
+
+        .video-container.active {
+            display: block;
+        }
+
+        .video-container iframe {
+            width: 100%;
+            max-width: 480px;
+            height: 270px;
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 8px 24px rgba(180, 160, 200, 0.2);
+        }
+
+        .video-thumbnail {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #fff5f8 0%, #f8f0ff 100%);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .video-thumbnail span {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -330,15 +377,33 @@
             </div>
         </div>
 
+        <!-- YouTube视频库 -->
+        <div class="card">
+            <h2>🎬 YouTube视频库</h2>
+            <div class="input-group">
+                <input type="text" id="videoInput" placeholder="粘贴YouTube视频链接...">
+                <button class="btn-primary" onclick="addVideo()">添加</button>
+            </div>
+            <div id="videoList" class="item-list"></div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="videoCount">0</div>
+                    <div class="stat-label">视频数</div>
+                </div>
+            </div>
+        </div>
+
         <!-- 随机抽取 -->
         <div class="card random-section">
             <h2 style="justify-content: center;">🎲 随机抽取</h2>
             <div class="random-type" id="randomType">选择一个类型开始</div>
             <div class="random-display" id="randomDisplay">?</div>
-            <div class="random-type" id="wordDefinition" style="color: #666; font-size: 14px; min-height: 20px;"></div>
+            <div class="random-type" id="wordDefinition"></div>
+            <div id="videoPlayer" class="video-container"></div>
             <div class="timer-buttons">
                 <button class="btn-success" onclick="startRandom('topic')">抽取话题</button>
                 <button class="btn-warning" onclick="startRandom('word')">抽取单词</button>
+                <button class="btn-purple" onclick="startRandom('video')">抽取视频</button>
             </div>
         </div>
 
@@ -7405,12 +7470,72 @@
             "zero",
             "zone"
         ];
+        let videos = JSON.parse(localStorage.getItem('videos')) || [];
         let timerInterval = null;
         let timeLeft = 60;
 
         function saveData() {
             localStorage.setItem('topics', JSON.stringify(topics));
             localStorage.setItem('words', JSON.stringify(words));
+            localStorage.setItem('videos', JSON.stringify(videos));
+        }
+
+        function extractVideoId(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+                /youtube\.com\/shorts\/([^&\n?#]+)/
+            ];
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) return match[1];
+            }
+            return null;
+        }
+
+        function addVideo() {
+            const input = document.getElementById('videoInput');
+            const url = input.value.trim();
+            if (!url) return;
+            
+            const videoId = extractVideoId(url);
+            if (!videoId) {
+                alert('请输入有效的YouTube链接');
+                return;
+            }
+            
+            const exists = videos.some(v => v.id === videoId);
+            if (exists) {
+                alert('该视频已添加');
+                return;
+            }
+            
+            videos.push({ id: videoId, url: url });
+            saveData();
+            renderVideos();
+            input.value = '';
+        }
+
+        function deleteVideo(index) {
+            videos.splice(index, 1);
+            saveData();
+            renderVideos();
+        }
+
+        function renderVideos() {
+            const list = document.getElementById('videoList');
+            document.getElementById('videoCount').textContent = videos.length;
+            
+            if (videos.length === 0) {
+                list.innerHTML = '<div class="empty-message">还没有视频，添加一个开始吧</div>';
+                return;
+            }
+            
+            list.innerHTML = videos.map((video, index) => `
+                <div class="video-thumbnail">
+                    <span>视频 ${index + 1}</span>
+                    <button class="btn-danger" onclick="deleteVideo(${index})">删除</button>
+                </div>
+            `).join('');
         }
 
         function addTopic() {
@@ -7485,6 +7610,27 @@
             const display = document.getElementById('randomDisplay');
             const typeDisplay = document.getElementById('randomType');
             const definitionDisplay = document.getElementById('wordDefinition');
+            const videoPlayer = document.getElementById('videoPlayer');
+            
+            videoPlayer.classList.remove('active');
+            videoPlayer.innerHTML = '';
+            
+            if (type === 'video') {
+                if (videos.length === 0) {
+                    display.textContent = '视频库为空';
+                    typeDisplay.textContent = '🎬 YouTube视频';
+                    return;
+                }
+                
+                const randomIndex = Math.floor(Math.random() * videos.length);
+                const video = videos[randomIndex];
+                typeDisplay.textContent = '🎬 YouTube视频';
+                display.textContent = `视频 ${randomIndex + 1} / ${videos.length}`;
+                definitionDisplay.textContent = '';
+                videoPlayer.classList.add('active');
+                videoPlayer.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.id}" allowfullscreen></iframe>`;
+                return;
+            }
             
             const list = type === 'topic' ? topics : words;
             
@@ -7611,8 +7757,13 @@
             if (e.key === 'Enter') addWord();
         });
 
+        document.getElementById('videoInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addVideo();
+        });
+
         renderTopics();
         renderWords();
+        renderVideos();
         updateTimerDisplay();
     </script>
 </body>

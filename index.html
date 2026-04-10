@@ -315,11 +315,22 @@
 
         .video-container iframe {
             width: 100%;
-            max-width: 480px;
-            height: 270px;
+            max-width: 560px;
+            height: 315px;
             border-radius: 16px;
             border: none;
             box-shadow: 0 8px 24px rgba(180, 160, 200, 0.2);
+        }
+
+        .subtitle-tip {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #fff5f8 0%, #f8f0ff 100%);
+            border-radius: 12px;
+            font-size: 13px;
+            color: #9b8bab;
+            text-align: center;
+            border: 1px dashed #e0d0f0;
         }
 
         .video-thumbnail {
@@ -7628,7 +7639,10 @@
                 display.textContent = `视频 ${randomIndex + 1} / ${videos.length}`;
                 definitionDisplay.textContent = '';
                 videoPlayer.classList.add('active');
-                videoPlayer.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.id}" allowfullscreen></iframe>`;
+                videoPlayer.innerHTML = `
+                    <iframe src="https://www.youtube.com/embed/${video.id}?cc_load_policy=1&cc_lang_pref=en&hl=zh-CN" allowfullscreen></iframe>
+                    <div class="subtitle-tip">💡 提示：点击视频下方的CC按钮 → 设置 → 字幕 → 翻译 → 选择中文</div>
+                `;
                 return;
             }
             

@@ -1,0 +1,17 @@
+{
+    "name": "英语学习助手",
+    "short_name": "英语学习",
+    "description": "话题库、单词库、视频库、英语学习工具",
+    "start_url": "/english-learning-app/",
+    "display": "standalone",
+    "background_color": "#fff5f5",
+    "theme_color": "#ff9a9e",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}

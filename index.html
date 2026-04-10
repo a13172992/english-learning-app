@@ -276,6 +276,7 @@
             <h2 style="justify-content: center;">🎲 随机抽取</h2>
             <div class="random-type" id="randomType">选择一个类型开始</div>
             <div class="random-display" id="randomDisplay">?</div>
+            <div class="random-type" id="wordDefinition" style="color: #666; font-size: 14px; min-height: 20px;"></div>
             <div class="timer-buttons">
                 <button class="btn-success" onclick="startRandom('topic')">抽取话题</button>
                 <button class="btn-warning" onclick="startRandom('word')">抽取单词</button>
@@ -7424,6 +7425,7 @@
         function startRandom(type) {
             const display = document.getElementById('randomDisplay');
             const typeDisplay = document.getElementById('randomType');
+            const definitionDisplay = document.getElementById('wordDefinition');
             
             const list = type === 'topic' ? topics : words;
             
@@ -7438,13 +7440,55 @@
             const maxCount = 20;
             const interval = setInterval(() => {
                 const randomIndex = Math.floor(Math.random() * list.length);
-                display.textContent = list[randomIndex];
+                const item = list[randomIndex];
+                display.textContent = item;
+                
+                if (type === 'word') {
+                    definitionDisplay.textContent = '加载中...';
+                    fetchDefinition(item);
+                } else {
+                    definitionDisplay.textContent = '';
+                }
+                
                 count++;
                 
                 if (count >= maxCount) {
                     clearInterval(interval);
                 }
             }, 100);
+        }
+
+        async function fetchDefinition(word) {
+            const definitionDisplay = document.getElementById('wordDefinition');
+            try {
+                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const entry = data[0];
+                    let definitions = [];
+                    
+                    if (entry.meanings && entry.meanings.length > 0) {
+                        const firstMeaning = entry.meanings[0];
+                        if (firstMeaning.definitions && firstMeaning.definitions.length > 0) {
+                            definitions.push(`[${firstMeaning.partOfSpeech}] ${firstMeaning.definitions[0].definition}`);
+                            if (firstMeaning.definitions[0].example) {
+                                definitions.push(`例句: "${firstMeaning.definitions[0].example}"`);
+                            }
+                        }
+                    }
+                    
+                    if (definitions.length > 0) {
+                        definitionDisplay.textContent = definitions.join(' ');
+                    } else {
+                        definitionDisplay.textContent = '暂无解释';
+                    }
+                } else {
+                    definitionDisplay.textContent = '暂无解释';
+                }
+            } catch (error) {
+                definitionDisplay.textContent = '获取解释失败';
+            }
         }
 
         function formatTime(seconds) {
